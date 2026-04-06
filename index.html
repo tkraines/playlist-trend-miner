@@ -366,24 +366,27 @@ async function runMiner() {
       return allItems;
     }
 
-    for (const pl of playlists) {
-      try {
-        const totalTracks = pl.tracks?.total || 50;
-        const recentItems = await fetchAllRecentTracks(pl.id, totalTracks);
-        if (recentItems === null) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
-        accessible++;
-        for (const item of recentItems) {
-          if (!item?.track?.id) continue;
-          const addedAt = new Date(item.added_at);
-          const { id, name, artists, popularity } = item.track;
-          if ((popularity || 0) < minPop) continue;
-          if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
-          trackMap[id].count++;
-          if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
-          if (addedAt >= recentCutoff) trackMap[id].recentCount++;
-        }
-      } catch(e) { skipped++; }
-      done++;
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < playlists.length; i += BATCH_SIZE) {
+      const batch = playlists.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(async (pl) => {
+        try {
+          const totalTracks = pl.tracks?.total || 50;
+          const recentItems = await fetchAllRecentTracks(pl.id, totalTracks);
+          accessible++;
+          for (const item of recentItems) {
+            if (!item?.track?.id) continue;
+            const addedAt = new Date(item.added_at);
+            const { id, name, artists, popularity } = item.track;
+            if ((popularity || 0) < minPop) continue;
+            if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
+            trackMap[id].count++;
+            if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
+            if (addedAt >= recentCutoff) trackMap[id].recentCount++;
+          }
+        } catch(e) { skipped++; }
+        done++;
+      }));
       setProgress(10 + (done / total) * 76);
       setStatus(`Scanned ${done}/${total} playlists — ${accessible} accessible, ${skipped} skipped…`);
     }
