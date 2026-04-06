@@ -291,17 +291,41 @@ async function runMiner() {
     const trackMap = {};
     const total = playlists.length;
     let done = 0;
+    let activeCount = 0;
+
+    async function fetchTracks(url) {
+      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+      if (!res.ok) return null;
+      return res.json();
+    }
 
     for (const pl of playlists) {
       try {
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`, {
-          headers: { Authorization: 'Bearer ' + accessToken }
+        const totalTracks = pl.tracks?.total || 0;
+        if (totalTracks === 0) { done++; continue; }
+
+        // Check the most recently added tracks first (tail of the playlist)
+        const checkOffset = Math.max(0, totalTracks - 10);
+        const checkData = await fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=10&offset=${checkOffset}`);
+        if (!checkData) { done++; continue; }
+
+        // See if any of the last 10 tracks fall within our cutoff
+        const recentItems = (checkData.items || []).filter(item => {
+          if (!item?.track?.id) return false;
+          return new Date(item.added_at) >= cutoff;
         });
-        if (!res.ok) { done++; continue; }
-        const data = await res.json();
-        const allDates = (data.items||[]).filter(i=>i?.track?.id).map(i=>i.added_at).slice(0,3);
-        if (done === 0) setStatus('Sample dates: ' + allDates.join(' | '));
-        for (const item of (data.items || [])) {
+
+        // Skip this playlist entirely if nothing recent at the tail
+        if (recentItems.length === 0) { done++; continue; }
+
+        activeCount++;
+        setStatus(`Found active playlist ${activeCount}: "${pl.name}" — fetching all tracks…`);
+
+        // Now fetch the full playlist
+        const fullData = await fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
+        if (!fullData) { done++; continue; }
+
+        for (const item of (fullData.items || [])) {
           if (!item?.track?.id) continue;
           const addedAt = new Date(item.added_at);
           if (addedAt < cutoff) continue;
@@ -314,8 +338,8 @@ async function runMiner() {
       } catch(e) {}
       done++;
       setProgress(10 + (done / total) * 76);
-      if (done % 5 === 0) setStatus(`Scanned ${done} / ${total} playlists…`);
     }
+    setStatus(`Scanned ${total} playlists, ${activeCount} active in window. Scoring…`);
 
     setProgress(90);
     setStatus('Scoring…');
