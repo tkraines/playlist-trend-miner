@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Playlist Trend Miner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #f0f0f0;
+    --text2: #888;
+    --text3: #555;
+    --accent: #1DB954;
+    --accent-dim: rgba(29,185,84,0.15);
+    --hot: #ff6b35;
+    --hot-dim: rgba(255,107,53,0.15);
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; }
+
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+
+  header {
+    padding: 2rem 2.5rem 1.5rem;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+  }
+  header h1 { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
+  header p { font-size: 13px; color: var(--text2); font-family: var(--mono); }
+
+  main { flex: 1; max-width: 760px; width: 100%; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .field-hint { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-left: 8px; text-transform: none; letter-spacing: 0; }
+
+  .input-row { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+  .input-row:last-child { margin-bottom: 0; }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--border2); }
+  input[type="text"]::placeholder { color: var(--text3); }
+
+  button {
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  button:hover { background: var(--bg3); border-color: var(--border2); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 500;
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    margin-top: 0.75rem;
+  }
+  .btn-primary:hover:not(:disabled) { background: #1ed760; border-color: #1ed760; }
+
+  .section-label {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  .window-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 0.5rem; }
+  .window-opt {
+    background: var(--bg3);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .window-opt:hover { border-color: var(--border2); }
+  .window-opt.active { border-color: var(--accent); background: var(--accent-dim); }
+  .window-opt .wlabel { font-size: 11px; font-family: var(--mono); color: var(--text3); margin-bottom: 2px; }
+  .window-opt.active .wlabel { color: var(--accent); }
+  .window-opt .wval { font-size: 14px; font-weight: 500; }
+
+  .weight-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .weight-row label { font-size: 13px; color: var(--text2); min-width: 140px; font-family: var(--mono); font-size: 12px; }
+  .weight-row input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border2);
+    border-radius: 2px;
+    outline: none;
+  }
+  .weight-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+  }
+  .weight-row .wnum { font-size: 13px; font-family: var(--mono); font-weight: 500; min-width: 20px; text-align: right; color: var(--text); }
+
+  .status { font-size: 13px; font-family: var(--mono); color: var(--text2); padding: 10px 0; min-height: 38px; }
+
+  .progress-track { height: 1px; background: var(--border); margin-bottom: 1.5rem; overflow: hidden; display: none; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
+  .alert {
+    font-size: 13px;
+    font-family: var(--mono);
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  .alert-ok { background: var(--accent-dim); border: 0.5px solid rgba(29,185,84,0.3); color: var(--accent); }
+  .alert-err { background: var(--hot-dim); border: 0.5px solid rgba(255,107,53,0.3); color: var(--hot); }
+
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .results-header h2 { font-size: 16px; font-weight: 500; }
+
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .track-row:last-child { border-bottom: none; }
+
+  .track-num { font-size: 12px; font-family: var(--mono); color: var(--text3); min-width: 22px; text-align: right; }
+
+  .track-info { flex: 1; min-width: 0; }
+  .track-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+  .track-artist { font-size: 12px; font-family: var(--mono); color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .score-track { height: 1px; background: var(--border); border-radius: 1px; margin-top: 6px; }
+  .score-fill { height: 1px; background: var(--accent); border-radius: 1px; }
+
+  .track-meta { text-align: right; min-width: 80px; }
+  .meta-count { font-size: 13px; font-weight: 500; font-family: var(--mono); }
+  .meta-sub { font-size: 11px; font-family: var(--mono); color: var(--text3); }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 2px 7px;
+    border-radius: 99px;
+    margin-left: 7px;
+    vertical-align: middle;
+    position: relative;
+    top: -1px;
+  }
+  .badge-hot { background: var(--hot-dim); color: var(--hot); border: 0.5px solid rgba(255,107,53,0.3); }
+  .badge-rising { background: var(--accent-dim); color: var(--accent); border: 0.5px solid rgba(29,185,84,0.3); }
+
+  footer {
+    padding: 1.5rem 2.5rem;
+    border-top: 0.5px solid var(--border);
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--text3);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Playlist Trend Miner</h1>
+  <p>surface what's moving — not what's settled</p>
+</header>
+
+<main>
+
+  <div id="auth-section">
+    <div class="card">
+      <span class="field-label">Spotify client ID <span class="field-hint">— get yours at developer.spotify.com/dashboard</span></span>
+      <div class="input-row">
+        <input type="text" id="client-id-input" placeholder="e.g. a1b2c3d4e5f6..." />
+        <button onclick="saveClientId()">Connect →</button>
+      </div>
+      <div id="auth-alert" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="search-section" style="display:none;">
+    <div class="alert alert-ok" id="auth-ok">Connected to Spotify</div>
+
+    <div class="card">
+      <span class="field-label">Search term</span>
+      <div class="input-row">
+        <input type="text" id="search-term" placeholder="e.g. bedroom pop, hyperpop, sad girl autumn…" />
+      </div>
+
+      <div class="section-label">Recency window</div>
+      <div class="window-grid" id="window-opts">
+        <div class="window-opt" onclick="selectWindow(7)" data-days="7">
+          <div class="wlabel">hot</div>
+          <div class="wval">Last 7 days</div>
+        </div>
+        <div class="window-opt active" onclick="selectWindow(30)" data-days="30">
+          <div class="wlabel">trending</div>
+          <div class="wval">Last 30 days</div>
+        </div>
+        <div class="window-opt" onclick="selectWindow(90)" data-days="90">
+          <div class="wlabel">emerging</div>
+          <div class="wval">Last 90 days</div>
+        </div>
+      </div>
+
+      <div class="section-label">Score weighting</div>
+      <div class="weight-row">
+        <label>frequency</label>
+        <input type="range" min="0" max="10" step="1" value="5" id="w-freq" oninput="document.getElementById('wv-freq').textContent=this.value" />
+        <span class="wnum" id="wv-freq">5</span>
+      </div>
+      <div class="weight-row">
+        <label>recency</label>
+        <input type="range" min="0" max="10" step="1" value="7" id="w-rec" oninput="document.getElementById('wv-rec').textContent=this.value" />
+        <span class="wnum" id="wv-rec">7</span>
+      </div>
+      <div class="weight-row">
+        <label>velocity</label>
+        <input type="range" min="0" max="10" step="1" value="8" id="w-vel" oninput="document.getElementById('wv-vel').textContent=this.value" />
+        <span class="wnum" id="wv-vel">8</span>
+      </div>
+
+      <button class="btn-primary" id="run-btn" onclick="runMiner()">Find trending tracks</button>
+    </div>
+
+    <div class="status" id="status-bar"></div>
+    <div class="progress-track" id="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+
+    <div id="results-section" style="display:none;">
+      <div class="results-header">
+        <h2 id="results-title">Top tracks</h2>
+        <button onclick="saveToSpotify()">Save to Spotify</button>
+      </div>
+      <div id="track-list"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Built with Spotify Web API &nbsp;·&nbsp; scores = frequency × recency × velocity</footer>
+
+<script>
+const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0];
+const SCOPES = 'playlist-modify-public playlist-modify-private';
+let accessToken = null;
+let clientId = null;
+let selectedDays = 30;
+let foundTracks = [];
+
+function selectWindow(days) {
+  selectedDays = days;
+  document.querySelectorAll('#window-opts .window-opt').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.days) === days);
+  });
+}
+
+function saveClientId() {
+  const id = document.getElementById('client-id-input').value.trim();
+  if (!id) return;
+  clientId = id;
+  initiateAuth();
+}
+
+function initiateAuth() {
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('spotify_state', state);
+  sessionStorage.setItem('spotify_client_id', clientId);
+  const params = new URLSearchParams({
+    response_type: 'token',
+    client_id: clientId,
+    scope: SCOPES,
+    redirect_uri: REDIRECT_URI,
+    state
+  });
+  window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+function checkCallback() {
+  const hash = window.location.hash.substring(1);
+  const savedClientId = sessionStorage.getItem('spotify_client_id');
+  const savedState = sessionStorage.getItem('spotify_state');
+  if (!hash) { if (savedClientId) clientId = savedClientId; return; }
+  const params = new URLSearchParams(hash);
+  const token = params.get('access_token');
+  const state = params.get('state');
+  if (token && state === savedState) {
+    accessToken = token;
+    clientId = savedClientId;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showSearch();
+  } else if (params.get('error')) {
+    showAuthError('Auth failed: ' + params.get('error'));
+  }
+}
+
+function showSearch() {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('search-section').style.display = 'block';
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-alert');
+  el.className = 'alert alert-err';
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function spotifyGet(url) {
+  const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+  if (res.status === 401) throw new Error('Token expired — refresh the page to re-authenticate.');
+  if (!res.ok) throw new Error('Spotify API error ' + res.status);
+  return res.json();
+}
+
+function setStatus(msg) { document.getElementById('status-bar').textContent = msg; }
+function setProgress(pct) { document.getElementById('progress-fill').style.width = Math.min(100, pct) + '%'; }
+
+async function runMiner() {
+  const term = document.getElementById('search-term').value.trim();
+  if (!term) return;
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  document.getElementById('results-section').style.display = 'none';
+  const pt = document.getElementById('progress-track');
+  pt.style.display = 'block';
+  setProgress(0);
+
+  const wFreq = parseInt(document.getElementById('w-freq').value);
+  const wRec = parseInt(document.getElementById('w-rec').value);
+  const wVel = parseInt(document.getElementById('w-vel').value);
+
+  const now = Date.now();
+  const cutoff = new Date(now - selectedDays * 864e5);
+  const velocityCutoff = new Date(now - 14 * 864e5);
+  const recentCutoff = new Date(now - 30 * 864e5);
+
+  try {
+    setStatus('Searching playlists for "' + term + '"…');
+    const playlists = [];
+    const p1 = await spotifyGet(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=playlist&limit=50`);
+    playlists.push(...p1.playlists.items.filter(Boolean));
+    if (p1.playlists.next) {
+      const p2 = await spotifyGet(p1.playlists.next);
+      playlists.push(...p2.playlists.items.filter(Boolean));
+    }
+    setStatus(`Found ${playlists.length} playlists. Scanning tracks…`);
+    setProgress(10);
+
+    const trackMap = {};
+    const total = playlists.length;
+    let done = 0;
+
+    for (const pl of playlists) {
+      try {
+        const data = await spotifyGet(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=100&fields=items(added_at,track(id,name,artists,popularity))`);
+        for (const item of (data.items || [])) {
+          if (!item?.track?.id) continue;
+          const addedAt = new Date(item.added_at);
+          if (addedAt < cutoff) continue;
+          const { id, name, artists, popularity } = item.track;
+          if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
+          trackMap[id].count++;
+          if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
+          if (addedAt >= recentCutoff) trackMap[id].recentCount++;
+        }
+      } catch(e) {}
+      done++;
+      setProgress(10 + (done / total) * 76);
+      if (done % 5 === 0) setStatus(`Scanned ${done} / ${total} playlists…`);
+    }
+
+    setProgress(90);
+    setStatus('Scoring…');
+
+    const tracks = Object.values(trackMap);
+    if (!tracks.length) {
+      setStatus('No tracks found — try a wider window or different term.');
+      btn.disabled = false;
+      return;
+    }
+
+    const maxC = Math.max(...tracks.map(t=>t.count), 1);
+    const maxV = Math.max(...tracks.map(t=>t.velocityCount), 1);
+    const maxR = Math.max(...tracks.map(t=>t.recentCount), 1);
+
+    const scored = tracks.map(t => ({
+      ...t,
+      score: (t.count/maxC)*wFreq + (t.recentCount/maxR)*wRec + (t.velocityCount/maxV)*wVel
+    })).sort((a,b) => b.score - a.score);
+
+    foundTracks = scored.slice(0, 50);
+    setProgress(100);
+    setStatus(`Done — ${foundTracks.length} tracks found.`);
+    renderResults(term, foundTracks);
+  } catch(e) {
+    setStatus('Error: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+function renderResults(term, tracks) {
+  const maxScore = Math.max(...tracks.map(t=>t.score), 1);
+  document.getElementById('results-title').textContent = 'Trending: ' + term;
+  const list = document.getElementById('track-list');
+  list.innerHTML = '';
+  tracks.forEach((t, i) => {
+    const pct = Math.round((t.score / maxScore) * 100);
+    const isHot = t.velocityCount >= 3;
+    const isRising = t.recentCount >= 3 && !isHot;
+    const badge = isHot ? '<span class="badge badge-hot">hot</span>' : isRising ? '<span class="badge badge-rising">rising</span>' : '';
+    const row = document.createElement('div');
+    row.className = 'track-row';
+    row.innerHTML = `
+      <span class="track-num">${i+1}</span>
+      <div class="track-info">
+        <div class="track-title">${t.name}${badge}</div>
+        <div class="track-artist">${t.artist}</div>
+        <div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="track-meta">
+        <div class="meta-count">${t.count}</div>
+        <div class="meta-sub">${t.velocityCount} last 14d</div>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+  document.getElementById('results-section').style.display = 'block';
+}
+
+async function saveToSpotify() {
+  if (!foundTracks.length) return;
+  try {
+    const me = await spotifyGet('https://api.spotify.com/v1/me');
+    const term = document.getElementById('search-term').value.trim();
+    const pl = await fetch(`https://api.spotify.com/v1/users/${me.id}/playlists`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: `Trending: ${term}`, description: `Playlist Trend Miner — ${selectedDays}d window`, public: false })
+    }).then(r=>r.json());
+    await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uris: foundTracks.slice(0,100).map(t=>`spotify:track:${t.id}`) })
+    });
+    setStatus('Saved to Spotify as "Trending: ' + term + '"');
+  } catch(e) {
+    setStatus('Save failed: ' + e.message);
+  }
+}
+
+checkCallback();
+</script>
+</body>
+</html>
