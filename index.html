@@ -299,6 +299,8 @@ async function runMiner() {
         });
         if (!res.ok) { done++; continue; }
         const data = await res.json();
+        const allDates = (data.items||[]).filter(i=>i?.track?.id).map(i=>i.added_at).slice(0,3);
+        if (done === 0) setStatus('Sample dates: ' + allDates.join(' | '));
         for (const item of (data.items || [])) {
           if (!item?.track?.id) continue;
           const addedAt = new Date(item.added_at);
