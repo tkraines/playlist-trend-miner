@@ -106,6 +106,9 @@
         <div class="window-opt" onclick="selectWindow(90)" data-days="90"><div class="wlabel">emerging</div><div class="wval">Last 90 days</div></div>
       </div>
 
+      <div class="section-label">Filters</div>
+      <div class="weight-row"><label>min popularity</label><input type="range" min="0" max="80" step="5" value="30" id="w-pop" oninput="document.getElementById('wv-pop').textContent=this.value" /><span class="wnum" id="wv-pop">30</span></div>
+
       <div class="section-label">Score weighting</div>
       <div class="weight-row"><label>frequency</label><input type="range" min="0" max="10" step="1" value="5" id="w-freq" oninput="document.getElementById('wv-freq').textContent=this.value" /><span class="wnum" id="wv-freq">5</span></div>
       <div class="weight-row"><label>recency</label><input type="range" min="0" max="10" step="1" value="7" id="w-rec" oninput="document.getElementById('wv-rec').textContent=this.value" /><span class="wnum" id="wv-rec">7</span></div>
@@ -282,16 +285,10 @@ async function runMiner() {
     const seen = new Set();
     const playlists = [];
 
-    // Expand search term into variations to maximise playlist coverage
+    // Search exact term plus a couple of tight variations
     const variations = [
       term,
       term + ' 2026',
-      term + ' playlist',
-      term + ' night',
-      term + ' season',
-      term + ' songs',
-      term + ' vibes',
-      term + ' mix',
       '"' + term + '"'
     ];
 
@@ -318,12 +315,18 @@ async function runMiner() {
       await searchVariation(v);
     }
 
-    if (!playlists.length) {
-      setStatus('No playlists found — try a different search term.');
+    // Filter to playlists where the term appears as a whole word in the name
+    const wordRegex = new RegExp('\\b' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+    const filtered = playlists.filter(p => p.name && wordRegex.test(p.name));
+
+    if (!filtered.length) {
+      setStatus('No playlists found with "' + term + '" as a whole word in the title — try a different term.');
       btn.disabled = false;
       return;
     }
-    setStatus(`Found ${playlists.length} playlists. Scanning tracks…`);
+    playlists.length = 0;
+    playlists.push(...filtered);
+    setStatus(`Found ${playlists.length} playlists with "${term}" in the name. Scanning tracks…`);
     setProgress(10);
 
     const trackMap = {};
@@ -331,20 +334,29 @@ async function runMiner() {
     let done = 0;
     let skipped = 0;
     let accessible = 0;
+    const minPop = parseInt(document.getElementById('w-pop').value);
+
+    async function fetchTail(plId, totalTracks) {
+      const offset = Math.max(0, totalTracks - 49);
+      const res = await fetch(`https://api.spotify.com/v1/playlists/${plId}/tracks?limit=49&offset=${offset}`, {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      if (!res.ok) return null;
+      return res.json();
+    }
 
     for (const pl of playlists) {
       try {
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=49`, {
-          headers: { Authorization: 'Bearer ' + accessToken }
-        });
-        if (!res.ok) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
+        const totalTracks = pl.tracks?.total || 50;
+        const data = await fetchTail(pl.id, totalTracks);
+        if (!data) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
         accessible++;
-        const data = await res.json();
         for (const item of (data.items || [])) {
           if (!item?.track?.id) continue;
           const addedAt = new Date(item.added_at);
           if (addedAt < cutoff) continue;
           const { id, name, artists, popularity } = item.track;
+          if ((popularity || 0) < minPop) continue;
           if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
           trackMap[id].count++;
           if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
