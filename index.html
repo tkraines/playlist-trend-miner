@@ -269,19 +269,45 @@ async function runMiner() {
   const recentCutoff = new Date(now - 30 * 864e5);
 
   try {
-    setStatus('Searching playlists for "' + term + '"…');
+    setStatus('Searching playlists…');
+    const seen = new Set();
     const playlists = [];
-    try {
-      const p1 = await spotifyGet(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=playlist`);
-      playlists.push(...(p1.playlists?.items || []).filter(p => p && p.id));
-      if (p1.playlists?.next) {
-        try {
-          const p2 = await spotifyGet(p1.playlists.next);
-          playlists.push(...(p2.playlists?.items || []).filter(p => p && p.id));
-        } catch(e) {}
-      }
-    } catch(e) {
-      setStatus('Search failed: ' + e.message);
+
+    // Expand search term into variations
+    const variations = [
+      term,
+      term + ' 2026',
+      term + ' playlist',
+      term + ' night',
+      term + ' season',
+      '"' + term + '"'
+    ];
+
+    async function searchVariation(q) {
+      try {
+        const pages = [
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=50`,
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=50&offset=50`,
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=50&offset=100`,
+        ];
+        for (const url of pages) {
+          try {
+            const data = await spotifyGet(url);
+            const items = (data.playlists?.items || []).filter(p => p && p.id && !seen.has(p.id));
+            items.forEach(p => { seen.add(p.id); playlists.push(p); });
+            if (!data.playlists?.next) break;
+          } catch(e) { break; }
+        }
+      } catch(e) {}
+    }
+
+    for (const v of variations) {
+      setStatus(`Searching: "${v}"…`);
+      await searchVariation(v);
+    }
+
+    if (!playlists.length) {
+      setStatus('No playlists found — try a different search term.');
       btn.disabled = false;
       return;
     }
@@ -291,34 +317,31 @@ async function runMiner() {
     const trackMap = {};
     const total = playlists.length;
     let done = 0;
+    let skipped = 0;
+    let accessible = 0;
 
     for (const pl of playlists) {
       try {
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=10`, {
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`, {
           headers: { Authorization: 'Bearer ' + accessToken }
         });
-        const statusCode = res.status;
-        const data = res.ok ? await res.json() : null;
-        const firstItem = data?.items?.[0];
-        const firstDate = firstItem?.added_at || 'no date';
-        const firstTrack = firstItem?.track?.name || 'no track';
-        setStatus(`PL ${done+1}: status=${statusCode} | first="${firstTrack}" | added=${firstDate} | cutoff=${cutoff.toISOString().slice(0,10)}`);
-        await new Promise(r => setTimeout(r, 800));
-        if (data) {
-          for (const item of (data.items || [])) {
-            if (!item?.track?.id) continue;
-            const addedAt = new Date(item.added_at);
-            if (addedAt < cutoff) continue;
-            const { id, name, artists, popularity } = item.track;
-            if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
-            trackMap[id].count++;
-            if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
-            if (addedAt >= recentCutoff) trackMap[id].recentCount++;
-          }
+        if (!res.ok) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
+        accessible++;
+        const data = await res.json();
+        for (const item of (data.items || [])) {
+          if (!item?.track?.id) continue;
+          const addedAt = new Date(item.added_at);
+          if (addedAt < cutoff) continue;
+          const { id, name, artists, popularity } = item.track;
+          if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
+          trackMap[id].count++;
+          if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
+          if (addedAt >= recentCutoff) trackMap[id].recentCount++;
         }
-      } catch(e) { setStatus('Exception on pl ' + done + ': ' + e.message); await new Promise(r => setTimeout(r, 800)); }
+      } catch(e) { skipped++; }
       done++;
       setProgress(10 + (done / total) * 76);
+      setStatus(`Scanned ${done}/${total} playlists — ${accessible} accessible, ${skipped} skipped…`);
     }
 
     setProgress(90);
