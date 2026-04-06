@@ -336,25 +336,45 @@ async function runMiner() {
     let accessible = 0;
     const minPop = parseInt(document.getElementById('w-pop').value);
 
-    async function fetchTail(plId, totalTracks) {
-      const offset = Math.max(0, totalTracks - 49);
-      const res = await fetch(`https://api.spotify.com/v1/playlists/${plId}/tracks?limit=49&offset=${offset}`, {
-        headers: { Authorization: 'Bearer ' + accessToken }
-      });
-      if (!res.ok) return null;
-      return res.json();
+    async function fetchAllRecentTracks(plId, totalTracks) {
+      const allItems = [];
+      let offset = Math.max(0, totalTracks - 49);
+      let reachedOldTracks = false;
+
+      while (!reachedOldTracks) {
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${plId}/tracks?limit=49&offset=${offset}`, {
+          headers: { Authorization: 'Bearer ' + accessToken }
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        const items = (data.items || []).filter(i => i?.track?.id);
+        if (!items.length) break;
+
+        for (const item of items) {
+          const addedAt = new Date(item.added_at);
+          if (addedAt >= cutoff) allItems.push(item);
+          else reachedOldTracks = true;
+        }
+
+        // Move backwards — if we haven't hit old tracks yet and there are more pages back
+        if (!reachedOldTracks && offset > 0) {
+          offset = Math.max(0, offset - 49);
+        } else {
+          break;
+        }
+      }
+      return allItems;
     }
 
     for (const pl of playlists) {
       try {
         const totalTracks = pl.tracks?.total || 50;
-        const data = await fetchTail(pl.id, totalTracks);
-        if (!data) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
+        const recentItems = await fetchAllRecentTracks(pl.id, totalTracks);
+        if (recentItems === null) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
         accessible++;
-        for (const item of (data.items || [])) {
+        for (const item of recentItems) {
           if (!item?.track?.id) continue;
           const addedAt = new Date(item.added_at);
-          if (addedAt < cutoff) continue;
           const { id, name, artists, popularity } = item.track;
           if ((popularity || 0) < minPop) continue;
           if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
