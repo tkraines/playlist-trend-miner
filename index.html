@@ -271,11 +271,19 @@ async function runMiner() {
   try {
     setStatus('Searching playlists for "' + term + '"…');
     const playlists = [];
-    const p1 = await spotifyGet(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=playlist&limit=50`);
-    playlists.push(...p1.playlists.items.filter(p => p && p.id));
-    if (p1.playlists.next) {
-      const p2 = await spotifyGet(p1.playlists.next);
-      playlists.push(...p2.playlists.items.filter(p => p && p.id));
+    try {
+      const p1 = await spotifyGet(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=playlist&limit=50`);
+      playlists.push(...(p1.playlists?.items || []).filter(p => p && p.id));
+      if (p1.playlists?.next) {
+        try {
+          const p2 = await spotifyGet(p1.playlists.next);
+          playlists.push(...(p2.playlists?.items || []).filter(p => p && p.id));
+        } catch(e) {}
+      }
+    } catch(e) {
+      setStatus('Search failed: ' + e.message);
+      btn.disabled = false;
+      return;
     }
     setStatus(`Found ${playlists.length} playlists. Scanning tracks…`);
     setProgress(10);
@@ -286,7 +294,11 @@ async function runMiner() {
 
     for (const pl of playlists) {
       try {
-        const data = await spotifyGet(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`, {
+          headers: { Authorization: 'Bearer ' + accessToken }
+        });
+        if (!res.ok) { done++; continue; }
+        const data = await res.json();
         for (const item of (data.items || [])) {
           if (!item?.track?.id) continue;
           const addedAt = new Date(item.added_at);
