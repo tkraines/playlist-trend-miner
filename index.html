@@ -272,7 +272,7 @@ async function runMiner() {
     setStatus('Searching playlists for "' + term + '"…');
     const playlists = [];
     try {
-      const p1 = await spotifyGet(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=playlist&limit=50`);
+      const p1 = await spotifyGet(`https://api.spotify.com/v1/search?q=${encodeURIComponent(term)}&type=playlist`);
       playlists.push(...(p1.playlists?.items || []).filter(p => p && p.id));
       if (p1.playlists?.next) {
         try {
