@@ -241,7 +241,10 @@ function showAuthError(msg) {
 async function spotifyGet(url) {
   const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
   if (res.status === 401) throw new Error('Token expired — refresh the page to re-authenticate.');
-  if (!res.ok) throw new Error('Spotify API error ' + res.status);
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error((err.error?.message || 'Spotify API error') + ' (' + res.status + ')');
+  }
   return res.json();
 }
 
@@ -283,7 +286,7 @@ async function runMiner() {
 
     for (const pl of playlists) {
       try {
-        const data = await spotifyGet(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=100&fields=items(added_at,track(id,name,artists,popularity))`);
+        const data = await spotifyGet(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=100`);
         for (const item of (data.items || [])) {
           if (!item?.track?.id) continue;
           const addedAt = new Date(item.added_at);
