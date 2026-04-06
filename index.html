@@ -273,22 +273,25 @@ async function runMiner() {
     const seen = new Set();
     const playlists = [];
 
-    // Expand search term into variations
+    // Expand search term into variations to maximise playlist coverage
     const variations = [
       term,
       term + ' 2026',
       term + ' playlist',
       term + ' night',
       term + ' season',
+      term + ' songs',
+      term + ' vibes',
+      term + ' mix',
       '"' + term + '"'
     ];
 
     async function searchVariation(q) {
       try {
         const pages = [
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=50`,
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=50&offset=50`,
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=50&offset=100`,
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=49`,
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=49&offset=49`,
+          `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=playlist&limit=49&offset=98`,
         ];
         for (const url of pages) {
           try {
@@ -322,7 +325,7 @@ async function runMiner() {
 
     for (const pl of playlists) {
       try {
-        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`, {
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=49`, {
           headers: { Authorization: 'Bearer ' + accessToken }
         });
         if (!res.ok) { skipped++; done++; setProgress(10 + (done / total) * 76); continue; }
