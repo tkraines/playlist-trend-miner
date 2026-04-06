@@ -92,7 +92,7 @@
   </div>
 
   <div id="search-section" style="display:none;">
-    <div class="alert alert-ok">Connected to Spotify</div>
+    <div class="alert alert-ok" style="display:flex;align-items:center;justify-content:space-between;">Connected to Spotify <button onclick="logout()" style="font-size:12px;padding:4px 10px;border-color:rgba(29,185,84,0.4);color:#1DB954;">Switch account</button></div>
     <div class="card">
       <span class="field-label">Search term</span>
       <div class="input-row">
@@ -147,6 +147,15 @@ async function generateCodeChallenge(verifier) {
   const data = new TextEncoder().encode(verifier);
   const digest = await crypto.subtle.digest('SHA-256', data);
   return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function logout() {
+  sessionStorage.clear();
+  accessToken = null;
+  clientId = null;
+  document.getElementById('search-section').style.display = 'none';
+  document.getElementById('auth-section').style.display = 'block';
+  document.getElementById('client-id-input').value = '';
 }
 
 function selectWindow(days) {
