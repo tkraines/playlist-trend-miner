@@ -291,55 +291,35 @@ async function runMiner() {
     const trackMap = {};
     const total = playlists.length;
     let done = 0;
-    let activeCount = 0;
-
-    async function fetchTracks(url) {
-      const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
-      if (!res.ok) return null;
-      return res.json();
-    }
 
     for (const pl of playlists) {
       try {
-        const totalTracks = pl.tracks?.total || 0;
-        if (totalTracks === 0) { done++; continue; }
-
-        // Check the most recently added tracks first (tail of the playlist)
-        const checkOffset = Math.max(0, totalTracks - 10);
-        const checkData = await fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=10&offset=${checkOffset}`);
-        if (!checkData) { done++; continue; }
-
-        // See if any of the last 10 tracks fall within our cutoff
-        const recentItems = (checkData.items || []).filter(item => {
-          if (!item?.track?.id) return false;
-          return new Date(item.added_at) >= cutoff;
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=10`, {
+          headers: { Authorization: 'Bearer ' + accessToken }
         });
-
-        // Skip this playlist entirely if nothing recent at the tail
-        if (recentItems.length === 0) { done++; continue; }
-
-        activeCount++;
-        setStatus(`Found active playlist ${activeCount}: "${pl.name}" — fetching all tracks…`);
-
-        // Now fetch the full playlist
-        const fullData = await fetchTracks(`https://api.spotify.com/v1/playlists/${pl.id}/tracks?limit=50`);
-        if (!fullData) { done++; continue; }
-
-        for (const item of (fullData.items || [])) {
-          if (!item?.track?.id) continue;
-          const addedAt = new Date(item.added_at);
-          if (addedAt < cutoff) continue;
-          const { id, name, artists, popularity } = item.track;
-          if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
-          trackMap[id].count++;
-          if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
-          if (addedAt >= recentCutoff) trackMap[id].recentCount++;
+        const statusCode = res.status;
+        const data = res.ok ? await res.json() : null;
+        const firstItem = data?.items?.[0];
+        const firstDate = firstItem?.added_at || 'no date';
+        const firstTrack = firstItem?.track?.name || 'no track';
+        setStatus(`PL ${done+1}: status=${statusCode} | first="${firstTrack}" | added=${firstDate} | cutoff=${cutoff.toISOString().slice(0,10)}`);
+        await new Promise(r => setTimeout(r, 800));
+        if (data) {
+          for (const item of (data.items || [])) {
+            if (!item?.track?.id) continue;
+            const addedAt = new Date(item.added_at);
+            if (addedAt < cutoff) continue;
+            const { id, name, artists, popularity } = item.track;
+            if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
+            trackMap[id].count++;
+            if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
+            if (addedAt >= recentCutoff) trackMap[id].recentCount++;
+          }
         }
-      } catch(e) {}
+      } catch(e) { setStatus('Exception on pl ' + done + ': ' + e.message); await new Promise(r => setTimeout(r, 800)); }
       done++;
       setProgress(10 + (done / total) * 76);
     }
-    setStatus(`Scanned ${total} playlists, ${activeCount} active in window. Scoring…`);
 
     setProgress(90);
     setStatus('Scoring…');
