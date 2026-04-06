@@ -7,209 +7,69 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0a0a0a;
-    --bg2: #111111;
-    --bg3: #1a1a1a;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.15);
-    --text: #f0f0f0;
-    --text2: #888;
-    --text3: #555;
-    --accent: #1DB954;
-    --accent-dim: rgba(29,185,84,0.15);
-    --hot: #ff6b35;
-    --hot-dim: rgba(255,107,53,0.15);
-    --mono: 'DM Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
+    --bg: #0a0a0a; --bg2: #111111; --bg3: #1a1a1a;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+    --text: #f0f0f0; --text2: #888; --text3: #555;
+    --accent: #1DB954; --accent-dim: rgba(29,185,84,0.15);
+    --hot: #ff6b35; --hot-dim: rgba(255,107,53,0.15);
+    --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
   }
-
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.6; }
-
   body { display: flex; flex-direction: column; min-height: 100vh; }
-
-  header {
-    padding: 2rem 2.5rem 1.5rem;
-    border-bottom: 0.5px solid var(--border);
-    display: flex;
-    align-items: baseline;
-    gap: 1.5rem;
-  }
+  header { padding: 2rem 2.5rem 1.5rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: baseline; gap: 1.5rem; }
   header h1 { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
   header p { font-size: 13px; color: var(--text2); font-family: var(--mono); }
-
   main { flex: 1; max-width: 760px; width: 100%; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-
-  .card {
-    background: var(--bg2);
-    border: 0.5px solid var(--border);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .field-label {
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 8px;
-  }
-
+  .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+  .field-label { font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 8px; }
   .field-hint { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-left: 8px; text-transform: none; letter-spacing: 0; }
-
   .input-row { display: flex; gap: 8px; margin-bottom: 1.25rem; }
   .input-row:last-child { margin-bottom: 0; }
-
-  input[type="text"] {
-    flex: 1;
-    background: var(--bg3);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
+  input[type="text"] { flex: 1; background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--mono); font-size: 14px; outline: none; transition: border-color 0.2s; }
   input[type="text"]:focus { border-color: var(--border2); }
   input[type="text"]::placeholder { color: var(--text3); }
-
-  button {
-    background: transparent;
-    border: 0.5px solid var(--border2);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    padding: 10px 20px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-    white-space: nowrap;
-  }
-  button:hover { background: var(--bg3); border-color: var(--border2); }
+  button { background: transparent; border: 0.5px solid var(--border2); border-radius: 8px; color: var(--text); font-family: var(--sans); font-size: 14px; padding: 10px 20px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+  button:hover { background: var(--bg3); }
   button:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  .btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-    font-weight: 500;
-    width: 100%;
-    padding: 12px;
-    font-size: 15px;
-    margin-top: 0.75rem;
-  }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 500; width: 100%; padding: 12px; font-size: 15px; margin-top: 0.75rem; }
   .btn-primary:hover:not(:disabled) { background: #1ed760; border-color: #1ed760; }
-
-  .section-label {
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 1.5rem 0 0.75rem;
-  }
-
+  .section-label { font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin: 1.5rem 0 0.75rem; }
   .window-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 0.5rem; }
-  .window-opt {
-    background: var(--bg3);
-    border: 0.5px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-  }
+  .window-opt { background: var(--bg3); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
   .window-opt:hover { border-color: var(--border2); }
   .window-opt.active { border-color: var(--accent); background: var(--accent-dim); }
   .window-opt .wlabel { font-size: 11px; font-family: var(--mono); color: var(--text3); margin-bottom: 2px; }
   .window-opt.active .wlabel { color: var(--accent); }
   .window-opt .wval { font-size: 14px; font-weight: 500; }
-
   .weight-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .weight-row label { font-size: 13px; color: var(--text2); min-width: 140px; font-family: var(--mono); font-size: 12px; }
-  .weight-row input[type=range] {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 2px;
-    background: var(--border2);
-    border-radius: 2px;
-    outline: none;
-  }
-  .weight-row input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: var(--text);
-    cursor: pointer;
-  }
-  .weight-row .wnum { font-size: 13px; font-family: var(--mono); font-weight: 500; min-width: 20px; text-align: right; color: var(--text); }
-
+  .weight-row label { font-size: 12px; color: var(--text2); min-width: 140px; font-family: var(--mono); }
+  .weight-row input[type=range] { flex: 1; -webkit-appearance: none; height: 2px; background: var(--border2); border-radius: 2px; outline: none; }
+  .weight-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--text); cursor: pointer; }
+  .weight-row .wnum { font-size: 13px; font-family: var(--mono); font-weight: 500; min-width: 20px; text-align: right; }
   .status { font-size: 13px; font-family: var(--mono); color: var(--text2); padding: 10px 0; min-height: 38px; }
-
   .progress-track { height: 1px; background: var(--border); margin-bottom: 1.5rem; overflow: hidden; display: none; }
   .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
-
-  .alert {
-    font-size: 13px;
-    font-family: var(--mono);
-    padding: 10px 14px;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-  }
+  .alert { font-size: 13px; font-family: var(--mono); padding: 10px 14px; border-radius: 8px; margin-bottom: 1rem; }
   .alert-ok { background: var(--accent-dim); border: 0.5px solid rgba(29,185,84,0.3); color: var(--accent); }
   .alert-err { background: var(--hot-dim); border: 0.5px solid rgba(255,107,53,0.3); color: var(--hot); }
-
   .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
   .results-header h2 { font-size: 16px; font-weight: 500; }
-
-  .track-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 11px 0;
-    border-bottom: 0.5px solid var(--border);
-  }
+  .track-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 0.5px solid var(--border); }
   .track-row:last-child { border-bottom: none; }
-
   .track-num { font-size: 12px; font-family: var(--mono); color: var(--text3); min-width: 22px; text-align: right; }
-
   .track-info { flex: 1; min-width: 0; }
   .track-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
   .track-artist { font-size: 12px; font-family: var(--mono); color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
   .score-track { height: 1px; background: var(--border); border-radius: 1px; margin-top: 6px; }
   .score-fill { height: 1px; background: var(--accent); border-radius: 1px; }
-
   .track-meta { text-align: right; min-width: 80px; }
   .meta-count { font-size: 13px; font-weight: 500; font-family: var(--mono); }
   .meta-sub { font-size: 11px; font-family: var(--mono); color: var(--text3); }
-
-  .badge {
-    display: inline-block;
-    font-size: 10px;
-    font-family: var(--mono);
-    padding: 2px 7px;
-    border-radius: 99px;
-    margin-left: 7px;
-    vertical-align: middle;
-    position: relative;
-    top: -1px;
-  }
+  .badge { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 2px 7px; border-radius: 99px; margin-left: 7px; vertical-align: middle; position: relative; top: -1px; }
   .badge-hot { background: var(--hot-dim); color: var(--hot); border: 0.5px solid rgba(255,107,53,0.3); }
   .badge-rising { background: var(--accent-dim); color: var(--accent); border: 0.5px solid rgba(29,185,84,0.3); }
-
-  footer {
-    padding: 1.5rem 2.5rem;
-    border-top: 0.5px solid var(--border);
-    font-size: 12px;
-    font-family: var(--mono);
-    color: var(--text3);
-  }
+  footer { padding: 1.5rem 2.5rem; border-top: 0.5px solid var(--border); font-size: 12px; font-family: var(--mono); color: var(--text3); }
 </style>
 </head>
 <body>
@@ -220,7 +80,6 @@
 </header>
 
 <main>
-
   <div id="auth-section">
     <div class="card">
       <span class="field-label">Spotify client ID <span class="field-hint">— get yours at developer.spotify.com/dashboard</span></span>
@@ -233,8 +92,7 @@
   </div>
 
   <div id="search-section" style="display:none;">
-    <div class="alert alert-ok" id="auth-ok">Connected to Spotify</div>
-
+    <div class="alert alert-ok">Connected to Spotify</div>
     <div class="card">
       <span class="field-label">Search term</span>
       <div class="input-row">
@@ -243,36 +101,15 @@
 
       <div class="section-label">Recency window</div>
       <div class="window-grid" id="window-opts">
-        <div class="window-opt" onclick="selectWindow(7)" data-days="7">
-          <div class="wlabel">hot</div>
-          <div class="wval">Last 7 days</div>
-        </div>
-        <div class="window-opt active" onclick="selectWindow(30)" data-days="30">
-          <div class="wlabel">trending</div>
-          <div class="wval">Last 30 days</div>
-        </div>
-        <div class="window-opt" onclick="selectWindow(90)" data-days="90">
-          <div class="wlabel">emerging</div>
-          <div class="wval">Last 90 days</div>
-        </div>
+        <div class="window-opt" onclick="selectWindow(7)" data-days="7"><div class="wlabel">hot</div><div class="wval">Last 7 days</div></div>
+        <div class="window-opt active" onclick="selectWindow(30)" data-days="30"><div class="wlabel">trending</div><div class="wval">Last 30 days</div></div>
+        <div class="window-opt" onclick="selectWindow(90)" data-days="90"><div class="wlabel">emerging</div><div class="wval">Last 90 days</div></div>
       </div>
 
       <div class="section-label">Score weighting</div>
-      <div class="weight-row">
-        <label>frequency</label>
-        <input type="range" min="0" max="10" step="1" value="5" id="w-freq" oninput="document.getElementById('wv-freq').textContent=this.value" />
-        <span class="wnum" id="wv-freq">5</span>
-      </div>
-      <div class="weight-row">
-        <label>recency</label>
-        <input type="range" min="0" max="10" step="1" value="7" id="w-rec" oninput="document.getElementById('wv-rec').textContent=this.value" />
-        <span class="wnum" id="wv-rec">7</span>
-      </div>
-      <div class="weight-row">
-        <label>velocity</label>
-        <input type="range" min="0" max="10" step="1" value="8" id="w-vel" oninput="document.getElementById('wv-vel').textContent=this.value" />
-        <span class="wnum" id="wv-vel">8</span>
-      </div>
+      <div class="weight-row"><label>frequency</label><input type="range" min="0" max="10" step="1" value="5" id="w-freq" oninput="document.getElementById('wv-freq').textContent=this.value" /><span class="wnum" id="wv-freq">5</span></div>
+      <div class="weight-row"><label>recency</label><input type="range" min="0" max="10" step="1" value="7" id="w-rec" oninput="document.getElementById('wv-rec').textContent=this.value" /><span class="wnum" id="wv-rec">7</span></div>
+      <div class="weight-row"><label>velocity</label><input type="range" min="0" max="10" step="1" value="8" id="w-vel" oninput="document.getElementById('wv-vel').textContent=this.value" /><span class="wnum" id="wv-vel">8</span></div>
 
       <button class="btn-primary" id="run-btn" onclick="runMiner()">Find trending tracks</button>
     </div>
@@ -288,7 +125,6 @@
       <div id="track-list"></div>
     </div>
   </div>
-
 </main>
 
 <footer>Built with Spotify Web API &nbsp;·&nbsp; scores = frequency × recency × velocity</footer>
@@ -301,11 +137,21 @@ let clientId = null;
 let selectedDays = 30;
 let foundTracks = [];
 
+async function generateCodeVerifier() {
+  const array = new Uint8Array(64);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+async function generateCodeChallenge(verifier) {
+  const data = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
 function selectWindow(days) {
   selectedDays = days;
-  document.querySelectorAll('#window-opts .window-opt').forEach(c => {
-    c.classList.toggle('active', parseInt(c.dataset.days) === days);
-  });
+  document.querySelectorAll('#window-opts .window-opt').forEach(c => c.classList.toggle('active', parseInt(c.dataset.days) === days));
 }
 
 function saveClientId() {
@@ -315,36 +161,69 @@ function saveClientId() {
   initiateAuth();
 }
 
-function initiateAuth() {
+async function initiateAuth() {
+  const verifier = await generateCodeVerifier();
+  const challenge = await generateCodeChallenge(verifier);
   const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('pkce_verifier', verifier);
   sessionStorage.setItem('spotify_state', state);
   sessionStorage.setItem('spotify_client_id', clientId);
   const params = new URLSearchParams({
-    response_type: 'token',
+    response_type: 'code',
     client_id: clientId,
     scope: SCOPES,
     redirect_uri: REDIRECT_URI,
-    state
+    state,
+    code_challenge_method: 'S256',
+    code_challenge: challenge
   });
   window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
 }
 
-function checkCallback() {
-  const hash = window.location.hash.substring(1);
-  const savedClientId = sessionStorage.getItem('spotify_client_id');
-  const savedState = sessionStorage.getItem('spotify_state');
-  if (!hash) { if (savedClientId) clientId = savedClientId; return; }
-  const params = new URLSearchParams(hash);
-  const token = params.get('access_token');
-  const state = params.get('state');
-  if (token && state === savedState) {
-    accessToken = token;
-    clientId = savedClientId;
-    window.history.replaceState({}, document.title, window.location.pathname);
-    showSearch();
-  } else if (params.get('error')) {
-    showAuthError('Auth failed: ' + params.get('error'));
+async function exchangeCode(code) {
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  const id = sessionStorage.getItem('spotify_client_id');
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: REDIRECT_URI,
+      client_id: id,
+      code_verifier: verifier
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.error_description || 'Token exchange failed');
   }
+  const data = await res.json();
+  return data.access_token;
+}
+
+async function checkCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const savedState = sessionStorage.getItem('spotify_state');
+  const savedClientId = sessionStorage.getItem('spotify_client_id');
+
+  if (params.get('error')) { showAuthError('Auth failed: ' + params.get('error')); return; }
+
+  if (code && state === savedState) {
+    try {
+      accessToken = await exchangeCode(code);
+      clientId = savedClientId;
+      window.history.replaceState({}, document.title, window.location.pathname);
+      showSearch();
+    } catch(e) {
+      showAuthError(e.message + ' — make sure your redirect URI in Spotify is exactly: ' + REDIRECT_URI);
+    }
+    return;
+  }
+
+  if (savedClientId) clientId = savedClientId;
 }
 
 function showSearch() {
@@ -375,14 +254,12 @@ async function runMiner() {
   const btn = document.getElementById('run-btn');
   btn.disabled = true;
   document.getElementById('results-section').style.display = 'none';
-  const pt = document.getElementById('progress-track');
-  pt.style.display = 'block';
+  document.getElementById('progress-track').style.display = 'block';
   setProgress(0);
 
   const wFreq = parseInt(document.getElementById('w-freq').value);
   const wRec = parseInt(document.getElementById('w-rec').value);
   const wVel = parseInt(document.getElementById('w-vel').value);
-
   const now = Date.now();
   const cutoff = new Date(now - selectedDays * 864e5);
   const velocityCutoff = new Date(now - 14 * 864e5);
@@ -425,13 +302,8 @@ async function runMiner() {
 
     setProgress(90);
     setStatus('Scoring…');
-
     const tracks = Object.values(trackMap);
-    if (!tracks.length) {
-      setStatus('No tracks found — try a wider window or different term.');
-      btn.disabled = false;
-      return;
-    }
+    if (!tracks.length) { setStatus('No tracks found — try a wider window or different term.'); btn.disabled = false; return; }
 
     const maxC = Math.max(...tracks.map(t=>t.count), 1);
     const maxV = Math.max(...tracks.map(t=>t.velocityCount), 1);
