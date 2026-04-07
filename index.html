@@ -110,9 +110,28 @@
       <div class="weight-row"><label>min popularity</label><input type="range" min="0" max="80" step="5" value="30" id="w-pop" oninput="document.getElementById('wv-pop').textContent=this.value" /><span class="wnum" id="wv-pop">30</span></div>
 
       <div class="section-label">Score weighting</div>
-      <div class="weight-row"><label>frequency</label><input type="range" min="0" max="10" step="1" value="5" id="w-freq" oninput="document.getElementById('wv-freq').textContent=this.value" /><span class="wnum" id="wv-freq">5</span></div>
-      <div class="weight-row"><label>recency</label><input type="range" min="0" max="10" step="1" value="7" id="w-rec" oninput="document.getElementById('wv-rec').textContent=this.value" /><span class="wnum" id="wv-rec">7</span></div>
-      <div class="weight-row"><label>velocity</label><input type="range" min="0" max="10" step="1" value="8" id="w-vel" oninput="document.getElementById('wv-vel').textContent=this.value" /><span class="wnum" id="wv-vel">8</span></div>
+      <div style="font-size:12px;color:var(--text2);font-family:var(--mono);margin-bottom:12px;line-height:1.6;padding:10px 12px;background:var(--bg3);border-radius:8px;">
+        <strong style="color:var(--text);font-weight:500;">How scoring works</strong><br>
+        Each track is scored on two signals:<br>
+        <span style="color:var(--text);">Adds in window</span> — how many playlists added this track within your selected recency window (7/30/90 days).<br>
+        <span style="color:var(--text);">Velocity</span> — how many of those adds happened in the last 14 days specifically. High velocity = breaking right now.
+      </div>
+      <div class="weight-row"><label>adds in window</label><input type="range" min="0" max="10" step="1" value="5" id="w-freq" oninput="document.getElementById('wv-freq').textContent=this.value" /><span class="wnum" id="wv-freq">5</span></div>
+      <div class="weight-row"><label>velocity (last 14d)</label><input type="range" min="0" max="10" step="1" value="8" id="w-vel" oninput="document.getElementById('wv-vel').textContent=this.value" /><span class="wnum" id="wv-vel">8</span></div>
+
+      <div class="section-label">New releases only</div>
+      <div class="weight-row"><label>released in last</label>
+        <select id="w-release" style="flex:1;background:var(--bg3);border:0.5px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;">
+          <option value="0">All time (no filter)</option>
+          <option value="7">7 days</option>
+          <option value="14">14 days</option>
+          <option value="30">30 days</option>
+          <option value="60">60 days</option>
+          <option value="90">90 days</option>
+          <option value="180">6 months</option>
+          <option value="365">1 year</option>
+        </select>
+      </div>
 
       <button class="btn-primary" id="run-btn" onclick="runMiner()">Find trending tracks</button>
     </div>
@@ -123,7 +142,10 @@
     <div id="results-section" style="display:none;">
       <div class="results-header">
         <h2 id="results-title">Top tracks</h2>
-        <button onclick="saveToSpotify()">Save to Spotify</button>
+        <div style="display:flex;gap:8px;">
+          <button id="sort-btn" onclick="toggleSort()" style="font-size:12px;padding:6px 12px;">Sort: trending</button>
+          <button onclick="saveToSpotify()" style="font-size:12px;padding:6px 12px;">Save to Spotify</button>
+        </div>
       </div>
       <div id="track-list"></div>
     </div>
@@ -273,12 +295,12 @@ async function runMiner() {
   setProgress(0);
 
   const wFreq = parseInt(document.getElementById('w-freq').value);
-  const wRec = parseInt(document.getElementById('w-rec').value);
   const wVel = parseInt(document.getElementById('w-vel').value);
+  const releaseDays = parseInt(document.getElementById('w-release').value);
   const now = Date.now();
   const cutoff = new Date(now - selectedDays * 864e5);
   const velocityCutoff = new Date(now - 14 * 864e5);
-  const recentCutoff = new Date(now - 30 * 864e5);
+  const releaseCutoff = releaseDays > 0 ? new Date(now - releaseDays * 864e5) : null;
 
   try {
     setStatus('Searching playlists…');
@@ -377,12 +399,13 @@ async function runMiner() {
           for (const item of recentItems) {
             if (!item?.track?.id) continue;
             const addedAt = new Date(item.added_at);
-            const { id, name, artists, popularity } = item.track;
+            const { id, name, artists, popularity, album } = item.track;
             if ((popularity || 0) < minPop) continue;
-            if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, count: 0, recentCount: 0, velocityCount: 0 };
+            const releaseDate = album?.release_date ? new Date(album.release_date) : null;
+            if (releaseCutoff && releaseDate && releaseDate < releaseCutoff) continue;
+            if (!trackMap[id]) trackMap[id] = { id, name, artist: artists.map(a=>a.name).join(', '), popularity, releaseDate: album?.release_date || null, count: 0, velocityCount: 0 };
             trackMap[id].count++;
             if (addedAt >= velocityCutoff) trackMap[id].velocityCount++;
-            if (addedAt >= recentCutoff) trackMap[id].recentCount++;
           }
         } catch(e) { skipped++; }
         done++;
@@ -398,11 +421,10 @@ async function runMiner() {
 
     const maxC = Math.max(...tracks.map(t=>t.count), 1);
     const maxV = Math.max(...tracks.map(t=>t.velocityCount), 1);
-    const maxR = Math.max(...tracks.map(t=>t.recentCount), 1);
 
     const scored = tracks.map(t => ({
       ...t,
-      score: (t.count/maxC)*wFreq + (t.recentCount/maxR)*wRec + (t.velocityCount/maxV)*wVel
+      score: (t.count/maxC)*wFreq + (t.velocityCount/maxV)*wVel
     })).sort((a,b) => b.score - a.score);
 
     foundTracks = scored.slice(0, 50);
@@ -415,6 +437,21 @@ async function runMiner() {
   btn.disabled = false;
 }
 
+let currentSort = 'trending';
+
+function toggleSort() {
+  currentSort = currentSort === 'trending' ? 'release' : 'trending';
+  document.getElementById('sort-btn').textContent = 'Sort: ' + (currentSort === 'trending' ? 'trending' : 'release date');
+  const sorted = currentSort === 'release'
+    ? [...foundTracks].sort((a,b) => {
+        if (!a.releaseDate) return 1;
+        if (!b.releaseDate) return -1;
+        return new Date(b.releaseDate) - new Date(a.releaseDate);
+      })
+    : [...foundTracks].sort((a,b) => b.score - a.score);
+  renderResults(document.getElementById('results-title').textContent.replace('Trending: ',''), sorted);
+}
+
 function renderResults(term, tracks) {
   const maxScore = Math.max(...tracks.map(t=>t.score), 1);
   document.getElementById('results-title').textContent = 'Trending: ' + term;
@@ -423,19 +460,19 @@ function renderResults(term, tracks) {
   tracks.forEach((t, i) => {
     const pct = Math.round((t.score / maxScore) * 100);
     const isHot = t.velocityCount >= 3;
-    const isRising = t.recentCount >= 3 && !isHot;
-    const badge = isHot ? '<span class="badge badge-hot">hot</span>' : isRising ? '<span class="badge badge-rising">rising</span>' : '';
+    const badge = isHot ? '<span class="badge badge-hot">hot</span>' : '';
+    const relLabel = t.releaseDate ? t.releaseDate.slice(0,7) : '';
     const row = document.createElement('div');
     row.className = 'track-row';
     row.innerHTML = `
       <span class="track-num">${i+1}</span>
       <div class="track-info">
         <div class="track-title">${t.name}${badge}</div>
-        <div class="track-artist">${t.artist}</div>
+        <div class="track-artist">${t.artist}${relLabel ? ' <span style="color:var(--text3);font-size:11px;">· ' + relLabel + '</span>' : ''}</div>
         <div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div>
       </div>
       <div class="track-meta">
-        <div class="meta-count">${t.count}</div>
+        <div class="meta-count">${t.count} adds</div>
         <div class="meta-sub">${t.velocityCount} last 14d</div>
       </div>
     `;
